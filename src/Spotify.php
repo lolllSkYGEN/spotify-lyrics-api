@@ -18,6 +18,7 @@ class Spotify
     private $secret_key_url = 'https://github.com/xyloflake/spot-secrets-go/blob/main/secrets/secretDict.json?raw=true';
     private $sp_dc;
     private $cache_file;
+    public $search_error = null;
 
     /**
      * Spotify constructor.
@@ -184,6 +185,7 @@ class Spotify
      */
     function searchTrack($query): ?string
     {
+        $this->search_error = null;
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             $json = file_get_contents($this->cache_file);
             $token_data = json_decode($json, true);
@@ -216,12 +218,17 @@ class Spotify
                 if (!empty($items)) {
                     return $items[0]['id'];
                 }
-                break; // Не найдено
+                $this->search_error = "Track not found in Spotify search results.";
+                break;
             } elseif ($http_code === 401 && $attempt === 1) {
-                // Токен устарел, обновляем и повторяем попытку
                 $this->getToken();
                 continue;
             } else {
+                $this->search_error = [
+                    'http_code' => $http_code,
+                    'response' => json_decode($response, true) ?? $response,
+                    'attempt' => $attempt
+                ];
                 break;
             }
         }
