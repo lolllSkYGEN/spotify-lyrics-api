@@ -12,13 +12,14 @@ header('Content-Type: application/json');
 
 $trackid = $_GET['trackid'] ?? null;
 $url = $_GET['url'] ?? null;
+$q = $_GET['q'] ?? null;
 $format = $_GET['format'] ?? null;
 
 $re = '~[\bhttps://open.\b]*spotify[\b.com\b]*[/:]*track[/:]*([A-Za-z0-9]+)~';
 
-if (!$trackid && !$url) {
+if (!$trackid && !$url && !$q) {
     http_response_code(400);
-    echo json_encode(['error' => true, 'message' => 'url or trackid parameter is required!', 'usage' => 'https://github.com/akashrchandran/spotify-lyrics-api']);
+    echo json_encode(['error' => true, 'message' => 'url, trackid, or q parameter is required!', 'usage' => 'https://github.com/akashrchandran/spotify-lyrics-api']);
     return;
 }
 if ($url) {
@@ -29,6 +30,16 @@ if ($url) {
 try {
     $spotify = new Spotify(getenv('SP_DC'));
     $spotify->checkTokenExpire();
+
+    if ($q) {
+        $trackid = $spotify->searchTrack($q);
+        if (!$trackid) {
+            http_response_code(404);
+            echo json_encode(['error' => true, 'message' => 'Track not found on Spotify.']);
+            return;
+        }
+    }
+
     $lyricsData = $spotify->getLyrics(track_id: $trackid);
     echo make_response($spotify, $lyricsData, $format);
 } catch (SpotifyException $e) {
