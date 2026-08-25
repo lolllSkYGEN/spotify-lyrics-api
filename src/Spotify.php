@@ -177,6 +177,47 @@ class Spotify
     }
 
     /**
+     * Searches for a track on Spotify Web API and returns its ID.
+     * 
+     * @param string $query The search query.
+     * @return string|null The track ID if found, or null.
+     */
+    function searchTrack($query): ?string
+    {
+        $json = file_get_contents($this->cache_file);
+        $token = json_decode($json, true)['accessToken'];
+        $url = 'https://api.spotify.com/v1/search?' . http_build_query([
+            'q' => $query,
+            'type' => 'track',
+            'limit' => 1
+        ]);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'User-Agent: Mozilla/5.0',
+            "authorization: Bearer $token"
+        ));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        
+        $response = curl_exec($ch);
+        $info = curl_getinfo($ch);
+        $http_code = $info['http_code'];
+        
+        if ($http_code === 200) {
+            $json_res = json_decode($response, true);
+            $items = $json_res['tracks']['items'] ?? [];
+            if (!empty($items)) {
+                return $items[0]['id'];
+            }
+        }
+        return null;
+    }
+
+    /**
      * Retrieves the lyrics of a track from Spotify.
      * 
      * @param string $track_id The Spotify track id.
