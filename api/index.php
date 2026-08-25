@@ -35,7 +35,11 @@ try {
         $trackid = $spotify->searchTrack($q);
         if (!$trackid) {
             http_response_code(404);
-            echo json_encode(['error' => true, 'message' => 'Track not found on Spotify.']);
+            echo json_encode([
+                'error' => true,
+                'message' => 'Track not found on Spotify.',
+                'debug' => $spotify->search_error
+            ]);
             return;
         }
     }
